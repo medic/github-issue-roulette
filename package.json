@@ -1,0 +1,13 @@
+{
+  "name": "github-issue-roulette",
+  "version": "1.0.0",
+  "description": "Assign random un-milestoned issues to developers to get them dealt with",
+  "main": "index.js",
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "github": "^7.0.1",
+    "lodash": "^4.17.2"
+  }
+}

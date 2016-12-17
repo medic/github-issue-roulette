@@ -1,0 +1,10 @@
+{
+  "owner": "the owner of the repo",
+  "repo": "the name of the repo",
+  "githubApiToken": "yourapicred",
+  "assignments": 2,
+  "assignmees": [
+    "Alice",
+    "Bob"
+  ],
+}

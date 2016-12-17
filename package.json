@@ -2,6 +2,7 @@
   "name": "github-issue-roulette",
   "version": "1.0.0",
   "description": "Assign random un-milestoned issues to developers to get them dealt with",
+  "repository": "https://github.com/SCdF/github-issue-roulette",
   "main": "index.js",
   "scripts": {},
   "author": "",

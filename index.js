@@ -1,3 +1,5 @@
+/*jshint esversion: 6 */
+
 const _ = require('lodash'),
       GitHubApi = require('github');
 
@@ -6,10 +8,12 @@ const {
   repo,
   githubApiToken,
   assignments,
-  assignees
+  assignees,
+  dryRun=false
 } = require('./config.json');
 
 const assignmentMessage = (ass) => `@${ass} please decide: to close or to schedule`;
+const fetchIssuesBatch = 100;
 
 const github = new GitHubApi({
   protocol: 'https',
@@ -21,43 +25,88 @@ const github = new GitHubApi({
 
 github.authenticate({
     type: 'token',
-    token: GithubApiToken
+    token: githubApiToken
 });
 
-github.issues.getForRepo({
-  owner: owner,
-  repo: repo,
+const createComment = function(number, assignee) {
+  if (dryRun) {
+    console.log(`DRYRUN: would comment on ${number} for ${assignee}`);
+  } else {
+    return github.issues.createComment({
+      owner: owner,
+      repo: repo,
+      number: number,
+      body: assignmentMessage(assignee)
+    }).then(() => {
+      console.log(`Commented on ${number}`);
+    });
+  }
+};
 
-  per_page: 3,
+const assignIssue = function(number, assignee) {
+  if (dryRun) {
+    console.log(`DRYRUN: would assign ${number} to ${assignee}`);
+  } else {
+    return github.issues.addAssigneesToIssue({
+      owner: owner,
+      repo: repo,
+      number: number,
+      assignees: [assignee]
+    }).then(() => {
+      console.log(`Assigned ${number} to ${assignee}`);
+    });
+  }
+};
 
-  milesone: 'none',
-  user: 'none'
-}).then(results => {
-  const issues = _.shuffle(results);
+const getAllIssues = function(issues=[], page=0) {
+  console.log(`Fetching ${fetchIssuesBatch*page}-${(fetchIssuesBatch*page)+fetchIssuesBatch} issues…`);
+  return github.issues.getForRepo({
+    owner: owner,
+    repo: repo,
+
+    milestone: 'none',
+    assignee: 'none',
+
+    per_page: fetchIssuesBatch,
+    page: page
+  }).then(results => {
+    issues = results.concat(issues);
+
+    if (results.length < fetchIssuesBatch) {
+      return issues;
+    } else {
+      return getAllIssues(issues, page + 1);
+    }
+  });
+};
+
+// FLOW STARTS HERE
+
+if (dryRun) {
+  console.log('Dry-run enabled!');
+}
+
+getAllIssues().then(results => {
+  console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);
+
+  if (assignees.length * assignments > results.length) {
+    console.log(`Not enough open issues in ${owner}/${repo} for issue roulette! Congratulations!`);
+    return;
+  }
+
+  const shuffledIssues = _.shuffle(results);
 
   const promises = [];
 
-  for (assignee of assignees) {
-    const tissues = issues.splice(0, assignments);
-    for (issue of tissues) {
-      promises.put(github.issues.createComment({
-        owner: owner,
-        repo: repo,
-        number: issue.number,
-        body: assignmentMessage(assignee)
-      }));
-      promises.put(github.issues.addAssigneeToIssue({
-        owner: owner,
-        repo: repo,
-        number: issue.number,
-        assigneess: [assignee]
-      }));
+  for (const assignee of assignees) {
+    const tissues = shuffledIssues.splice(0, assignments);
+    for (const issue of tissues) {
+      promises.push(createComment(issue.number, assignee));
+      promises.push(assignIssue(issue.number, assignee));
     }
   }
 
   return Promise.all(promises);
-}).then((promiseResults) => {
-  console.log(promiseResults);
 }).catch(e => {
   console.log(e);
 });

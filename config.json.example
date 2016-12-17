@@ -3,8 +3,9 @@
   "repo": "the name of the repo",
   "githubApiToken": "yourapicred",
   "assignments": 2,
-  "assignmees": [
+  "assignees": [
     "Alice",
     "Bob"
   ],
+  "dryRun": false
 }

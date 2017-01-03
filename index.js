@@ -8,8 +8,9 @@ const {
   repo,
   githubApiToken,
   assignments,
+  issuesToPullFrom,
   assignees,
-  dryRun=false
+  dryRun=true // Safer to force you to turn it on
 } = require('./config.json');
 
 const assignmentMessage = (ass) => `@${ass} please decide: to close or to schedule`;
@@ -58,8 +59,9 @@ const assignIssue = function(number, assignee) {
   }
 };
 
-const getAllIssues = function(issues=[], page=0) {
-  console.log(`Fetching ${fetchIssuesBatch*page}-${(fetchIssuesBatch*page)+fetchIssuesBatch} issues…`);
+const getOldestNIssues = function(maxIssuesWanted, issues=[], page=1) {
+  console.log(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} issues…`);
+
   return github.issues.getForRepo({
     owner: owner,
     repo: repo,
@@ -67,17 +69,29 @@ const getAllIssues = function(issues=[], page=0) {
     milestone: 'none',
     assignee: 'none',
 
+    sort: 'updated',
+    direction: 'asc', // oldest first
+
     per_page: fetchIssuesBatch,
     page: page
   }).then(results => {
-    issues = results.concat(issues);
+    issues = issues.concat(results);
 
     if (results.length < fetchIssuesBatch) {
+      // Got all the issues
       return issues;
+    } else if (maxIssuesWanted && issues.length >= maxIssuesWanted) {
+      // Got all the issues that we wanted to get
+      return _.take(issues, maxIssuesWanted);
     } else {
-      return getAllIssues(issues, page + 1);
+      // Need to get more issues
+      return getOldestNIssues(maxIssuesWanted, issues, page + 1);
     }
   });
+};
+
+const getAllIssues = function() {
+  return getOldestNIssues();
 };
 
 // FLOW STARTS HERE
@@ -86,7 +100,7 @@ if (dryRun) {
   console.log('Dry-run enabled!');
 }
 
-getAllIssues().then(results => {
+getOldestNIssues(issuesToPullFrom).then(results => {
   console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);
 
   if (assignees.length * assignments > results.length) {

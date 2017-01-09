@@ -3,9 +3,11 @@
   "repo": "the name of the repo",
   "githubApiToken": "yourapicred",
   "assignments": 2,
+  "issuesToPullFrom": "optional constrainst, remove to pull from all issues",
   "assignees": [
     "Alice",
     "Bob"
   ],
+  "additionalQueryParams": "extra github search params to constrain the search by",
   "dryRun": false
 }

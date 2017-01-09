@@ -10,6 +10,7 @@ const {
   assignments,
   issuesToPullFrom,
   assignees,
+  additionalQueryParams,
   dryRun=true // Safer to force you to turn it on
 } = require('./config.json');
 
@@ -62,19 +63,18 @@ const assignIssue = function(number, assignee) {
 const getOldestNIssues = function(maxIssuesWanted, issues=[], page=1) {
   console.log(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} issues…`);
 
-  return github.issues.getForRepo({
-    owner: owner,
-    repo: repo,
-
-    milestone: 'none',
-    assignee: 'none',
+  return github.search.issues({
+    q: ['is:open is:issue no:milestone no:assignee',
+        `repo:${owner}/${repo}`,
+        additionalQueryParams].join(' '),
 
     sort: 'updated',
-    direction: 'asc', // oldest first
+    order: 'asc',
 
     per_page: fetchIssuesBatch,
     page: page
   }).then(results => {
+    results = results.items; // unbox search results from probably useful metadata
     issues = issues.concat(results);
 
     if (results.length < fetchIssuesBatch) {
@@ -115,8 +115,13 @@ getOldestNIssues(issuesToPullFrom).then(results => {
   for (const assignee of assignees) {
     const tissues = shuffledIssues.splice(0, assignments);
     for (const issue of tissues) {
+      console.log(`Assigning #${issue.number} to ${assignee}`);
+      console.log(issue.title);
+      console.log(issue.html_url);
+      console.log(`Last updated: ${issue.updated_at}`);
       promises.push(createComment(issue.number, assignee));
       promises.push(assignIssue(issue.number, assignee));
+      console.log();
     }
   }
 

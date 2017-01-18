@@ -14,7 +14,10 @@ const {
   dryRun=true // Safer to force you to turn it on
 } = require('./config.json');
 
-const assignmentMessage = (ass) => `@${ass} please decide: to close or to schedule`;
+// TODO: work out how to make the message generic while allowing for some
+//       templating to occur.
+const assignmentMessage = (ass) =>
+`@${ass} please close or schedule before the end of this sprint. See [triaging old issues](https://github.com/medic/medic-docs/blob/master/md/dev/workflow.md#triaging-old-issues). `;
 const fetchIssuesBatch = 100;
 
 const github = new GitHubApi({

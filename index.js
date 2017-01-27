@@ -11,6 +11,7 @@ const {
   issuesToPullFrom,
   assignees,
   additionalQueryParams,
+  labelsToAdd,
   dryRun=true // Safer to force you to turn it on
 } = require('./config.json');
 
@@ -33,7 +34,7 @@ github.authenticate({
     token: githubApiToken
 });
 
-const createComment = function(number, assignee) {
+const createComment = (number, assignee) => {
   if (dryRun) {
     console.log(`DRYRUN: would comment on ${number} for ${assignee}`);
   } else {
@@ -48,7 +49,7 @@ const createComment = function(number, assignee) {
   }
 };
 
-const assignIssue = function(number, assignee) {
+const assignIssue = (number, assignee) => {
   if (dryRun) {
     console.log(`DRYRUN: would assign ${number} to ${assignee}`);
   } else {
@@ -63,7 +64,22 @@ const assignIssue = function(number, assignee) {
   }
 };
 
-const getOldestNIssues = function(maxIssuesWanted, issues=[], page=1) {
+const addLabels = (number) => {
+  if (dryRun) {
+    console.log(`DRYRUN: would have added ${labelsToAdd} to ${number}`);
+  } else {
+    return github.issues.addLabels({
+      owner: owner,
+      repo: repo,
+      number: number,
+      body: labelsToAdd
+    }).then(() => {
+      console.log(`Added ${labelsToAdd} to ${number}`);
+    });
+  }
+};
+
+const getOldestNIssues = (maxIssuesWanted, issues=[], page=1) => {
   console.log(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} issues…`);
 
   return github.search.issues({
@@ -93,9 +109,7 @@ const getOldestNIssues = function(maxIssuesWanted, issues=[], page=1) {
   });
 };
 
-const getAllIssues = function() {
-  return getOldestNIssues();
-};
+const getAllIssues = () => getOldestNIssues();
 
 // FLOW STARTS HERE
 
@@ -122,8 +136,10 @@ getOldestNIssues(issuesToPullFrom).then(results => {
       console.log(issue.title);
       console.log(issue.html_url);
       console.log(`Last updated: ${issue.updated_at}`);
-      promises.push(createComment(issue.number, assignee));
-      promises.push(assignIssue(issue.number, assignee));
+      promises.push(
+        createComment(issue.number, assignee),
+        assignIssue(issue.number, assignee),
+        addLabels(issue.number, labelsToAdd));
       console.log();
     }
   }

@@ -9,5 +9,6 @@
     "Bob"
   ],
   "additionalQueryParams": "extra github search params to constrain the search by",
+  "labelsToAdd": ["Labels", "To", "Add", "To", "Picked", "Tickets"],
   "dryRun": false
 }

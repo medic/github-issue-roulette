@@ -8,6 +8,7 @@
     "Alice",
     "Bob"
   ],
+  "message": "Optional messsage that will be posted on the assigned issue. You can refer to the @${assignee}.",
   "additionalQueryParams": "extra github search params to constrain the search by",
   "labelsToAdd": ["Labels", "To", "Add", "To", "Picked", "Tickets"],
   "dryRun": false

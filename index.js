@@ -12,13 +12,12 @@ const {
   assignees,
   additionalQueryParams,
   labelsToAdd,
+  message,
   dryRun=true // Safer to force you to turn it on
 } = require('./config.json');
 
-// TODO: work out how to make the message generic while allowing for some
-//       templating to occur.
-const assignmentMessage = (ass) =>
-`@${ass} please close or schedule before the end of this sprint. See [triaging old issues](https://github.com/medic/medic-docs/blob/master/md/dev/workflow.md#triaging-old-issues). `;
+const assignmentMessage = (message, assignee) => eval('`'+ message +'`');
+
 const fetchIssuesBatch = 100;
 
 const github = new GitHubApi({
@@ -34,15 +33,16 @@ github.authenticate({
     token: githubApiToken
 });
 
-const createComment = (number, assignee) => {
+const createComment = (number, message, assignee) => {
   if (dryRun) {
-    console.log(`DRYRUN: would comment on ${number} for ${assignee}`);
+    console.log(`DRYRUN: would comment on ${number} for ${assignee}:
+${assignmentMessage(message, assignee)}`);
   } else {
     return github.issues.createComment({
       owner: owner,
       repo: repo,
       number: number,
-      body: assignmentMessage(assignee)
+      body: assignmentMessage(message, assignee)
     }).then(() => {
       console.log(`Commented on ${number}`);
     });
@@ -137,9 +137,12 @@ getOldestNIssues(issuesToPullFrom).then(results => {
       console.log(issue.html_url);
       console.log(`Last updated: ${issue.updated_at}`);
       promises.push(
-        createComment(issue.number, assignee),
         assignIssue(issue.number, assignee),
         addLabels(issue.number, labelsToAdd));
+      if (message) {
+        promises.push(createComment(issue.number, message, assignee));
+      }
+
       console.log();
     }
   }

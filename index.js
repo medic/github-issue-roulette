@@ -7,8 +7,8 @@ const {
   owner,
   repo,
   githubApiToken,
-  assignments,
-  issuesToPullFrom,
+  numIssuesPerPerson,
+  numIssuesToPickFrom,
   assignees,
   additionalQueryParams,
   labelsToAdd,
@@ -117,10 +117,10 @@ if (dryRun) {
   console.log('Dry-run enabled!');
 }
 
-getOldestNIssues(issuesToPullFrom).then(results => {
+getOldestNIssues(numIssuesToPickFrom).then(results => {
   console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);
 
-  if (assignees.length * assignments > results.length) {
+  if (assignees.length * numIssuesPerPerson > results.length) {
     console.log(`Not enough open issues in ${owner}/${repo} for issue roulette! Congratulations!`);
     return;
   }
@@ -130,7 +130,7 @@ getOldestNIssues(issuesToPullFrom).then(results => {
   const promises = [];
 
   for (const assignee of assignees) {
-    const tissues = shuffledIssues.splice(0, assignments);
+    const tissues = shuffledIssues.splice(0, numIssuesPerPerson);
     for (const issue of tissues) {
       console.log(`Assigning #${issue.number} to ${assignee}`);
       console.log(issue.title);

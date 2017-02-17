@@ -2,8 +2,8 @@
   "owner": "the owner of the repo",
   "repo": "the name of the repo",
   "githubApiToken": "yourapicred",
-  "assignments": 2,
-  "issuesToPullFrom": "optional constrainst, remove to pull from all issues",
+  "numIssuesPerPerson": 2,
+  "numIssuesToPickFrom": "optional constrainst, remove to pull from all issues",
   "assignees": [
     "Alice",
     "Bob"

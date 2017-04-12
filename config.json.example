@@ -2,13 +2,14 @@
   "owner": "the owner of the repo",
   "repo": "the name of the repo",
   "githubApiToken": "yourapicred",
-  "assignments": 2,
-  "issuesToPullFrom": "optional constrainst, remove to pull from all issues",
+  "numIssuesPerPerson": 2,
+  "numIssuesToPickFrom": "optional constraint, remove to pull from all issues",
   "assignees": [
     "Alice",
     "Bob"
   ],
+  "message": "Optional message that will be posted on the assigned issue. Instances of @@ will be replaced by the assignee username.",
   "additionalQueryParams": "extra github search params to constrain the search by",
   "labelsToAdd": ["Labels", "To", "Add", "To", "Picked", "Tickets"],
-  "dryRun": false
+  "dryRun": true
 }

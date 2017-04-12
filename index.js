@@ -16,7 +16,9 @@ const {
   dryRun=true // Safer to force you to turn it on
 } = require('./config.json');
 
-const assignmentMessage = (message, assignee) => eval('`'+ message +'`');
+const assignmentMessage = (message, assignee) => {
+  return message.replace(new RegExp(/@@/, 'g'), '@' + assignee);
+};
 
 const fetchIssuesBatch = 100;
 
@@ -35,8 +37,8 @@ github.authenticate({
 
 const createComment = (number, message, assignee) => {
   if (dryRun) {
-    console.log(`DRYRUN: would comment on ${number} for ${assignee}:
-${assignmentMessage(message, assignee)}`);
+    console.log(`DRYRUN: would comment on ${number} for ${assignee}:`,
+      assignmentMessage(message, assignee));
   } else {
     return github.issues.createComment({
       owner: owner,

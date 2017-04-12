@@ -3,13 +3,13 @@
   "repo": "the name of the repo",
   "githubApiToken": "yourapicred",
   "numIssuesPerPerson": 2,
-  "numIssuesToPickFrom": "optional constrainst, remove to pull from all issues",
+  "numIssuesToPickFrom": "optional constraint, remove to pull from all issues",
   "assignees": [
     "Alice",
     "Bob"
   ],
-  "message": "Optional messsage that will be posted on the assigned issue. You can refer to the @${assignee}.",
+  "message": "Optional message that will be posted on the assigned issue. Instances of @@ will be replaced by the assignee username.",
   "additionalQueryParams": "extra github search params to constrain the search by",
   "labelsToAdd": ["Labels", "To", "Add", "To", "Picked", "Tickets"],
-  "dryRun": false
+  "dryRun": true
 }

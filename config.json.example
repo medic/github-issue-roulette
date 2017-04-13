@@ -11,5 +11,6 @@
   "message": "Optional message that will be posted on the assigned issue. Instances of @@ will be replaced by the assignee username.",
   "additionalQueryParams": "extra github search params to constrain the search by",
   "labelsToAdd": ["Labels", "To", "Add", "To", "Picked", "Tickets"],
+  "numDaysOld": "Only assign issues that haven't been updated since numDaysOld days. Default is 0 (up to today)",
   "dryRun": true
 }

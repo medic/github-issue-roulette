@@ -9,6 +9,7 @@
   "license": "ISC",
   "dependencies": {
     "github": "^7.0.1",
-    "lodash": "^4.17.2"
+    "lodash": "^4.17.2",
+    "moment": "^2.18.1"
   }
 }

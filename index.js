@@ -1,7 +1,8 @@
 /*jshint esversion: 6 */
 
-const _ = require('lodash'),
-      GitHubApi = require('github');
+const GitHubApi = require('github'),
+        _ = require('lodash'),
+        moment = require('moment');
 
 const {
   owner,
@@ -13,7 +14,8 @@ const {
   additionalQueryParams,
   labelsToAdd,
   message,
-  dryRun=true // Safer to force you to turn it on
+  numDaysOld = 0,
+  dryRun = true // Safer to force you to turn it on
 } = require('./config.json');
 
 const assignmentMessage = (message, assignee) => {
@@ -21,6 +23,7 @@ const assignmentMessage = (message, assignee) => {
 };
 
 const fetchIssuesBatch = 100;
+var NUM_MILLIS_IN_DAY = 1000 * 60 * 60 * 24;
 
 const github = new GitHubApi({
   protocol: 'https',
@@ -86,6 +89,7 @@ const getOldestNIssues = (maxIssuesWanted, issues=[], page=1) => {
 
   return github.search.issues({
     q: ['is:open is:issue no:milestone no:assignee',
+        `updated:<${cutoffDate}`,
         `repo:${owner}/${repo}`,
         additionalQueryParams].join(' '),
 
@@ -95,7 +99,7 @@ const getOldestNIssues = (maxIssuesWanted, issues=[], page=1) => {
     per_page: fetchIssuesBatch,
     page: page
   }).then(results => {
-    results = results.items; // unbox search results from probably useful metadata
+    results = results.data.items; // unbox search results from probably useful metadata
     issues = issues.concat(results);
 
     if (results.length < fetchIssuesBatch) {
@@ -118,6 +122,10 @@ const getAllIssues = () => getOldestNIssues();
 if (dryRun) {
   console.log('Dry-run enabled!');
 }
+
+var cutoffDateMillis = new Date().getTime() - numDaysOld * NUM_MILLIS_IN_DAY;
+var cutoffDate = moment(new Date(cutoffDateMillis)).format('YYYY-MM-DD');
+console.log(`Getting issues that haven\'t been touched since ${cutoffDate}`);
 
 getOldestNIssues(numIssuesToPickFrom).then(results => {
   console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);

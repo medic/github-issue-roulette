@@ -125,6 +125,8 @@ if (dryRun) {
 const cutoffDate = moment().subtract(numDaysOld, 'd').format('YYYY-MM-DD');
 console.log(`Getting issues that haven't been touched since ${cutoffDate}`);
 
+var pickedIssues;
+
 getOldestNIssues(numIssuesToPickFrom).then(results => {
   console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);
 
@@ -133,6 +135,7 @@ getOldestNIssues(numIssuesToPickFrom).then(results => {
     return;
   }
 
+  pickedIssues = results;
   const shuffledIssues = _.shuffle(results);
 
   const promises = [];
@@ -156,6 +159,8 @@ getOldestNIssues(numIssuesToPickFrom).then(results => {
   }
 
   return Promise.all(promises);
+}).then(() => {
+  console.log(`All done!\nList of issues that we attempted to modify:\n ${pickedIssues.map(issue => issue.number)}`);
 }).catch(e => {
   console.log(e);
 });

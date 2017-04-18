@@ -1,8 +1,8 @@
 /*jshint esversion: 6 */
 
 const GitHubApi = require('github'),
-        _ = require('lodash'),
-        moment = require('moment');
+      _ = require('lodash'),
+      moment = require('moment');
 
 const {
   owner,
@@ -18,12 +18,10 @@ const {
   dryRun = true // Safer to force you to turn it on
 } = require('./config.json');
 
-const assignmentMessage = (message, assignee) => {
-  return message.replace(new RegExp(/@@/, 'g'), '@' + assignee);
-};
+const assignmentMessage = (message, assignee) =>
+  message.replace(new RegExp(/@@/, 'g'), '@' + assignee);
 
 const fetchIssuesBatch = 100;
-var NUM_MILLIS_IN_DAY = 1000 * 60 * 60 * 24;
 
 const github = new GitHubApi({
   protocol: 'https',
@@ -123,9 +121,8 @@ if (dryRun) {
   console.log('Dry-run enabled!');
 }
 
-var cutoffDateMillis = new Date().getTime() - numDaysOld * NUM_MILLIS_IN_DAY;
-var cutoffDate = moment(new Date(cutoffDateMillis)).format('YYYY-MM-DD');
-console.log(`Getting issues that haven\'t been touched since ${cutoffDate}`);
+const cutoffDate = moment().subtract(numDaysOld, 'd').format('YYYY-MM-DD');
+console.log(`Getting issues that haven't been touched since ${cutoffDate}`);
 
 getOldestNIssues(numIssuesToPickFrom).then(results => {
   console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);

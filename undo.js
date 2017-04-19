@@ -51,11 +51,9 @@ const deassignIssue = (number, assignee) => {
       body: {} // you get error if no body.
     };
     console.log('options', options);
-    return github.issues.removeAssigneesFromIssue(options).then(function(result) {
-      console.log('Deassigned ', number, 'from', assignee);
-    }).catch(function(err) {
-      console.log('err deassigning', err);
-    });
+    return github.issues.removeAssigneesFromIssue(options)
+    .then(() => console.log('Deassigned ', number, 'from', assignee))
+    .catch((err) => console.log('err deassigning', err));
   }
 };
 
@@ -77,11 +75,11 @@ const delabelIssue = (number, labelName) => {
 };
 
 issuesToFix.forEach((issue) => {
-  assignees.forEach(function(assignee) {
-    deassignIssue(issue, assignee);
-  });
+  assignees.forEach((assignee) =>
+    deassignIssue(issue, assignee)
+  );
 
-  labelsToAdd.forEach((label) => {
-    delabelIssue(issue, label);
-  });
+  labelsToAdd.forEach((label) =>
+    delabelIssue(issue, label)
+  );
 });

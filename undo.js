@@ -1,16 +1,17 @@
+/*jshint esversion: 6 */
 /**
  * Removes all the assigness specified in the config, and all the labels specified in the
  * config, from a list of issues.
  */
 
-var issuesToFix = [
+const issuesToFix = [
 /* paste your array of issue numbers here */
 ];
 
-var _ = require('lodash'),
+const _ = require('lodash'),
       GitHubApi = require('github');
 
-var {
+const {
   owner,
   repo,
   githubApiToken,
@@ -24,7 +25,7 @@ var {
 } = require('./config.json');
 
 
-var github = new GitHubApi({
+const github = new GitHubApi({
   protocol: 'https',
   host: 'api.github.com',
   headers: {
@@ -38,11 +39,11 @@ github.authenticate({
 });
 
 // If the assignee isn't present, it still returns success.
-var deassignIssue = function(number, assignee) {
+const deassignIssue = (number, assignee) => {
   if (dryRun) {
     console.log('DRYRUN: would deAssign ', number, 'from', assignee);
   } else {
-    var options = {
+    const options = {
       owner: owner,
       repo: repo,
       number: number,
@@ -59,7 +60,7 @@ var deassignIssue = function(number, assignee) {
 };
 
 // If the label isn't present, it still returns success.
-var delabelIssue = function(number, labelName) {
+const delabelIssue = (number, labelName) => {
   if (dryRun) {
     console.log('DRYRUN: would have removed', labelName, 'from', number);
   } else {
@@ -68,21 +69,19 @@ var delabelIssue = function(number, labelName) {
       repo: repo,
       number: number,
       name: labelName,
-      body: {} // you get error if no body.
-    }).then(function() {
-      console.log('Removed', labelName, 'from', number);
-    }).catch(function(err) {
-      console.log('err delabeling', err);
-    });
+      body: {} // you get an error if no body.
+    })
+    .then(() => console.log('Removed', labelName, 'from', number))
+    .catch((err) => console.log('err delabeling', err));
   }
 };
 
-issuesToFix.forEach(function(issue) {
+issuesToFix.forEach((issue) => {
   assignees.forEach(function(assignee) {
     deassignIssue(issue, assignee);
   });
 
-  labelsToAdd.forEach(function(label) {
+  labelsToAdd.forEach((label) => {
     delabelIssue(issue, label);
   });
 });

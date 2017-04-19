@@ -163,7 +163,7 @@ getOldestNIssues(numIssuesToPickFrom).then(results => {
         return createComment(issue.number, message, assignee);
       }
     }).then(() => {
-      logger.log(`${issue.number} assigned to ${assignee}${labelsToAdd.length ? ', labeled' : ''}${message ? ', commented' : ''}.`);
+      logger.log(`${dryRun ? 'DRYRUN, NO ACTION TAKEN - ' : ''}${issue.number} assigned to ${assignee}${labelsToAdd.length ? ', labeled' : ''}${message ? ', commented' : ''}.`);
     });
 
   for (const assignee of assignees) {

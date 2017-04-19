@@ -12,5 +12,6 @@
   "additionalQueryParams": "extra github search params to constrain the search by",
   "labelsToAdd": ["Labels", "To", "Add", "To", "Picked", "Tickets"],
   "numDaysOld": "Only assign issues that haven't been updated since numDaysOld days. Default is 0 (up to today)",
+  "verbose": "If true, logs all the things. Default: true.",
   "dryRun": true
 }

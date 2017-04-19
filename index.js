@@ -12,11 +12,24 @@ const {
   numIssuesToPickFrom,
   assignees,
   additionalQueryParams,
-  labelsToAdd,
+  labelsToAdd = [],
   message,
   numDaysOld = 0,
+  verbose = true,
   dryRun = true // Safer to force you to turn it on
 } = require('./config.json');
+
+const makeLogger = (verbose) => {
+  return {
+    log: console.log,
+    debug: (...args) => {
+      if (verbose) {
+        console.log(...args);
+      }
+    }
+  };
+};
+const logger = makeLogger(verbose);
 
 const assignmentMessage = (message, assignee) =>
   message.replace(new RegExp(/@@/, 'g'), '@' + assignee);
@@ -38,8 +51,9 @@ github.authenticate({
 
 const createComment = (number, message, assignee) => {
   if (dryRun) {
-    console.log(`DRYRUN: would comment on ${number} for ${assignee}:`,
+    logger.debug(`DRYRUN: would comment on ${number} for ${assignee}:`,
       assignmentMessage(message, assignee));
+    return Promise.resolve();
   } else {
     return github.issues.createComment({
       owner: owner,
@@ -47,14 +61,15 @@ const createComment = (number, message, assignee) => {
       number: number,
       body: assignmentMessage(message, assignee)
     }).then(() => {
-      console.log(`Commented on ${number}`);
+      logger.debug(`Commented on ${number}`);
     });
   }
 };
 
 const assignIssue = (number, assignee) => {
   if (dryRun) {
-    console.log(`DRYRUN: would assign ${number} to ${assignee}`);
+    logger.debug(`DRYRUN: would assign ${number} to ${assignee}`);
+    return Promise.resolve();
   } else {
     return github.issues.addAssigneesToIssue({
       owner: owner,
@@ -62,14 +77,15 @@ const assignIssue = (number, assignee) => {
       number: number,
       assignees: [assignee]
     }).then(() => {
-      console.log(`Assigned ${number} to ${assignee}`);
+      logger.debug(`Assigned ${number} to ${assignee}`);
     });
   }
 };
 
 const addLabels = (number) => {
   if (dryRun) {
-    console.log(`DRYRUN: would have added ${labelsToAdd} to ${number}`);
+    logger.debug(`DRYRUN: would have added ${labelsToAdd} to ${number}`);
+    return Promise.resolve();
   } else {
     return github.issues.addLabels({
       owner: owner,
@@ -78,13 +94,13 @@ const addLabels = (number) => {
       labels: labelsToAdd,
       body: {}
     }).then(() => {
-      console.log(`Added ${labelsToAdd} to ${number}`);
+      logger.debug(`Added ${labelsToAdd} to ${number}`);
     });
   }
 };
 
 const getOldestNIssues = (maxIssuesWanted, issues=[], page=1) => {
-  console.log(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} issues…`);
+  logger.debug(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} issues…`);
 
   return github.search.issues({
     q: ['is:open is:issue no:milestone no:assignee',
@@ -119,48 +135,55 @@ const getAllIssues = () => getOldestNIssues();
 // FLOW STARTS HERE
 
 if (dryRun) {
-  console.log('Dry-run enabled!');
+  logger.log('Dry-run enabled!');
 }
 
 const cutoffDate = moment().subtract(numDaysOld, 'd').format('YYYY-MM-DD');
-console.log(`Getting issues that haven't been touched since ${cutoffDate}`);
+logger.debug(`Getting issues that haven't been touched since ${cutoffDate}`);
 
-var pickedIssues;
+const pickedIssues = [];
 
 getOldestNIssues(numIssuesToPickFrom).then(results => {
-  console.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);
+  logger.log(`Found ${results.length} un-dealt-with issues in ${owner}/${repo}`);
 
   if (assignees.length * numIssuesPerPerson > results.length) {
-    console.log(`Not enough open issues in ${owner}/${repo} for issue roulette! Congratulations!`);
+    logger.log(`Not enough open issues in ${owner}/${repo} for issue roulette! Congratulations!`);
     return;
   }
 
-  pickedIssues = results;
   const shuffledIssues = _.shuffle(results);
 
   const promises = [];
 
+  const issuePromise = (issue, assignee) =>
+    assignIssue(issue.number, assignee)
+    .then(() => addLabels(issue.number, labelsToAdd))
+    .then(() => {
+      if (message) {
+        return createComment(issue.number, message, assignee);
+      }
+    }).then(() => {
+      logger.log(`${issue.number} assigned to ${assignee}${labelsToAdd.length ? ', labeled' : ''}${message ? ', commented' : ''}.`);
+    });
+
   for (const assignee of assignees) {
     const tissues = shuffledIssues.splice(0, numIssuesPerPerson);
     for (const issue of tissues) {
-      console.log(`Assigning #${issue.number} to ${assignee}`);
-      console.log(issue.title);
-      console.log(issue.html_url);
-      console.log(`Last updated: ${issue.updated_at}`);
-      promises.push(
-        assignIssue(issue.number, assignee),
-        addLabels(issue.number, labelsToAdd));
-      if (message) {
-        promises.push(createComment(issue.number, message, assignee));
-      }
+      logger.debug(`Assigning #${issue.number} to ${assignee}`);
+      logger.debug(issue.title);
+      logger.debug(issue.html_url);
+      logger.debug(`Last updated: ${issue.updated_at}`);
+      pickedIssues.push(issue);
+      promises.push(issuePromise(issue, assignee));
 
-      console.log();
+      logger.debug();
     }
   }
 
   return Promise.all(promises);
 }).then(() => {
-  console.log(`All done!\nList of issues that we attempted to modify:\n ${pickedIssues.map(issue => issue.number)}`);
+  logger.debug(`List of issues that we attempted to modify (check log for what actually happened):\n ${pickedIssues.map(issue => issue.number)}\n`);
+  logger.log(`All done!`);
 }).catch(e => {
-  console.log(e);
+  logger.log(e);
 });

@@ -75,7 +75,8 @@ const addLabels = (number) => {
       owner: owner,
       repo: repo,
       number: number,
-      body: labelsToAdd
+      labels: labelsToAdd,
+      body: {}
     }).then(() => {
       console.log(`Added ${labelsToAdd} to ${number}`);
     });

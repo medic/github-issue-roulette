@@ -1,0 +1,33 @@
+{
+  "owner": "medic",
+  "repo": "medic-webapp",
+  "assignees": [
+    "garethbowen",
+    "SCdF",
+    "alxndrsn",
+    "abbyad",
+    "sglangevin",
+    "browndav",
+    "dianabarson",
+    "rmhowe",
+    "vimemo"
+  ],
+  "numIssuesPerPerson": 3,
+  "ancient": {
+    "numDaysOld": 90,
+    "message": "Hi @@, this ticket has not been touched in 90 days. Do we still care?",
+    "additionalQueryParams": "no:milestone no:project no:assignee -label:\"Needs Triage\" ",
+    "labelsToAdd": ["Needs Triage"]
+  },
+  "unlabeled": {
+    "expectedLabels": [
+      "/Priority:.*/",
+      "/Status:.*/",
+      "/Type:.*/"
+    ],
+    "message": "Hi @@ please ensure this ticket has a Priority, Status and Type label.",
+    "labelsToAdd": ["Needs Triage"]
+  },
+  "dryRun": true,
+  "verbose": false
+}

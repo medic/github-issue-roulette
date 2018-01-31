@@ -15,7 +15,7 @@
   "numIssuesPerPerson": 3,
   "ancient": {
     "numDaysOld": 90,
-    "message": "Hi @@, this ticket has not been touched in 90 days. Do we still care?",
+    "message": "Hi @@,\n\nThis ticket has not been touched in 90 days.\n\n(See [triaging old issues](https://github.com/medic/medic-docs/blob/master/development/workflow.md#triaging-old-issues) for more detail",
     "additionalQueryParams": "no:milestone no:project no:assignee -label:\"Needs Triage\" ",
     "labelsToAdd": ["Needs Triage"]
   },
@@ -25,7 +25,7 @@
       "/Status:.*/",
       "/Type:.*/"
     ],
-    "message": "Hi @@ please ensure this ticket has a Priority, Status and Type label.",
+    "message": "Hi @@,\n\nPlease ensure this ticket has a Priority, Status and Type label.\n\n(See [triaging old issues](https://github.com/medic/medic-docs/blob/master/development/workflow.md#triaging-old-issues) for more detail",
     "labelsToAdd": ["Needs Triage"]
   },
   "dryRun": true,

@@ -26,13 +26,15 @@ const {
     labelsToAdd: ancientLabelsToAdd
   },
   unlabeled: {
-    expectedLabels,
+    expectedLabels: expectedLabelsRaw,
     message: unlabeledMessage,
     labelsToAdd: unlabeledLabelsToAdd
   },
   verbose = true,
   dryRun = true // Safer to force you to turn it on
 } = require('./config.json');
+
+const expectedLabels = expectedLabelsRaw.map(el => new RegExp(el));
 
 const assignee = (function* () {
   let i = 0;
@@ -165,7 +167,7 @@ const getOldIssues = (cutoffDate, issues=[], page=1) => {
 };
 
 // TODO: update wiki page and change messages
-const getOpenIssues = (issues=[], page=1) => {
+const getUnlabledIssues = (issues=[], page=1) => {
   logger.debug(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} open issues…`);
 
   const maxIssuesWanted = numIssuesPerPerson * assignees.length;
@@ -174,16 +176,24 @@ const getOpenIssues = (issues=[], page=1) => {
     q: `is:open is:issue repo:${owner}/${repo}`,
     per_page: fetchIssuesBatch,
     page: page
-  }).then(results => {
-    results = results.data.items; // unbox search results from probably useful metadata
-    issues = issues.concat(results);
+  }).then(({data: {items: results}}) => {
+    const unlabeled = results.filter(issue => {
+      const labels = issue.labels.map(l => l.name);
+
+      const missingLabel =
+        expectedLabels.find(expectedLabel => !labels.find(label => label.match(expectedLabel)));
+
+      return missingLabel;
+    });
+
+    issues = issues.concat(unlabeled);
 
     if (issues.length >= maxIssuesWanted) {
       return _.take(issues, maxIssuesWanted);
     } else if (results.length < fetchIssuesBatch) {
       return issues;
     } else {
-      return getOpenIssues(issues, page + 1);
+      return getUnlabledIssues(issues, page + 1);
     }
   });
 };
@@ -211,7 +221,7 @@ getOldIssues(cutoffDate).then(issues => {
   });
 
   logger.log('\nGetting open issues to check for incorrect labeling...');
-  return getOpenIssues();
+  return getUnlabledIssues();
 }).then(issues => {
   logger.log(`${issues.length} incorrectly labeled issues`);
 

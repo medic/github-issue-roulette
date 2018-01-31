@@ -21,13 +21,13 @@
   },
   "unlabeled": {
     "expectedLabels": [
-      "/Priority:.*/",
-      "/Status:.*/",
-      "/Type:.*/"
+      "^Priority:.*",
+      "^Status:.*",
+      "^Type:.*"
     ],
     "message": "Hi @@,\n\nPlease ensure this ticket has a Priority, Status and Type label.\n\n(See [triaging old issues](https://github.com/medic/medic-docs/blob/master/development/workflow.md#triaging-old-issues) for more detail)",
     "labelsToAdd": ["Needs Triage"]
   },
   "dryRun": true,
-  "verbose": false
+  "verbose": true
 }

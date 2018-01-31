@@ -34,6 +34,17 @@ const {
   dryRun = true // Safer to force you to turn it on
 } = require('./config.json');
 
+const assignee = (function* () {
+  let i = 0;
+  while (true) {
+    yield assignees[i];
+    i += 1;
+    if (i === assignees.length) {
+      i = 0;
+    }
+  }
+})();
+
 const makeLogger = (verbose) => {
   return {
     log: console.log,
@@ -123,7 +134,7 @@ const processIssue = (issue, assignee, labelsToAdd, message) =>
     }
   }).then(() => {
     logger.log(`${dryRun ? 'DRYRUN, NO ACTION TAKEN - ' : ''}${issue.number} assigned to ${assignee}${labelsToAdd.length ? ', labeled' : ''}${message ? ', commented' : ''}.`);
-  });
+  }).then(() => issue.number);
 
 const getOldIssues = (cutoffDate, issues=[], page=1) => {
   logger.debug(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} old issues…`);
@@ -143,21 +154,21 @@ const getOldIssues = (cutoffDate, issues=[], page=1) => {
     results = results.data.items; // unbox search results from probably useful metadata
     issues = issues.concat(results);
 
-    if (maxIssuesWanted && issues.length >= maxIssuesWanted) {
-      // Got all the issues that we wanted to get
+    if (issues.length >= maxIssuesWanted) {
       return _.take(issues, maxIssuesWanted);
     } else if (results.length < fetchIssuesBatch) {
-      // Got all the issues
       return issues;
     } else {
-      // Need to get more issues
       return getOldIssues(cutoffDate, issues, page + 1);
     }
   });
 };
 
+// TODO: update wiki page and change messages
 const getOpenIssues = (issues=[], page=1) => {
   logger.debug(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} open issues…`);
+
+  const maxIssuesWanted = numIssuesPerPerson * assignees.length;
 
   return github.search.issues({
     q: `is:open is:issue repo:${owner}/${repo}`,
@@ -167,7 +178,9 @@ const getOpenIssues = (issues=[], page=1) => {
     results = results.data.items; // unbox search results from probably useful metadata
     issues = issues.concat(results);
 
-    if (results.length < fetchIssuesBatch) {
+    if (issues.length >= maxIssuesWanted) {
+      return _.take(issues, maxIssuesWanted);
+    } else if (results.length < fetchIssuesBatch) {
       return issues;
     } else {
       return getOpenIssues(issues, page + 1);
@@ -184,34 +197,16 @@ if (dryRun) {
 const cutoffDate = moment().subtract(numDaysOld, 'd').format('YYYY-MM-DD');
 logger.log(`Getting issues that haven't been touched since ${cutoffDate}...`);
 
-const oldIssueLog = [],
-      unlabeledIssueLog = [];
-
 getOldIssues(cutoffDate).then(issues => {
   logger.log(`(at least) ${issues.length} un-dealt-with issues in ${owner}/${repo}`);
 
-  const shuffledIssues = _.shuffle(issues);
-
-  const promises = [];
-
-  for (const assignee of assignees) {
-    const tissues = shuffledIssues.splice(0, numIssuesPerPerson);
-    for (const issue of tissues) {
-      logger.debug(`Assigning #${issue.number} to ${assignee}`);
-      logger.debug(issue.title);
-      logger.debug(issue.html_url);
-      logger.debug(`Last updated: ${issue.updated_at}`);
-      oldIssueLog.push(issue.number);
-      promises.push(processIssue(issue, assignee, ancientLabelsToAdd, ancientMessage));
-
-      logger.debug();
-    }
-  }
+  const promises = _.shuffle(issues)
+    .map(issue => processIssue(issue, assignee.next().value, ancientLabelsToAdd, ancientMessage));
 
   return Promise.all(promises);
-}).then(() => {
+}).then(oldIssuesProcessed => {
   logger.log('\nList of old issues picked:');
-  oldIssueLog.forEach(issue => {
+  oldIssuesProcessed.forEach(issue => {
     logger.log(`  https://github.com/${owner}/${repo}/issues/${issue}`);
   });
 
@@ -219,19 +214,15 @@ getOldIssues(cutoffDate).then(issues => {
   return getOpenIssues();
 }).then(issues => {
   logger.log(`${issues.length} incorrectly labeled issues`);
-  const promises = [];
 
-  issues
+  const promises = issues
     .filter(issue => issue.labels.find(({name: issueLabel}) => expectedLabels.find(expectedLabel => !issueLabel.match(expectedLabel))))
-    .forEach(issue => {
-      unlabeledIssueLog.push(issue.number);
-      promises.push(processIssue(issue, _.sample(assignees), unlabeledLabelsToAdd, unlabeledMessage))
-    });
+    .map(issue => processIssue(issue, assignee.next().value, unlabeledLabelsToAdd, unlabeledMessage));
 
   return Promise.all(promises);
-}).then(() => {
+}).then(unlabeledIssuesProcessed => {
   logger.log('\nList of unlabeled issues:');
-  unlabeledIssueLog.forEach(issue => {
+  unlabeledIssuesProcessed.forEach(issue => {
     logger.log(`  https://github.com/${owner}/${repo}/issues/${issue}`);
   });
 

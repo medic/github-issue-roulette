@@ -127,6 +127,11 @@ const addLabels = (number, labelsToAdd) => {
   }
 };
 
+// TODO: this should probably be returned as part of processIssue, but then
+//  because we're chaining these we'd want a way of passing through the existing
+//  list. For now it's cleaner to just write to a mutatable global
+let processed = [];
+
 const processIssue = (issue, assignee, labelsToAdd, message) =>
   assignIssue(issue.number, assignee)
   .then(() => addLabels(issue.number, labelsToAdd))
@@ -136,7 +141,7 @@ const processIssue = (issue, assignee, labelsToAdd, message) =>
     }
   }).then(() => {
     logger.log(`${dryRun ? 'DRYRUN, NO ACTION TAKEN - ' : ''}${issue.number} assigned to ${assignee}${labelsToAdd.length ? ', labeled' : ''}${message ? ', commented' : ''}.`);
-  }).then(() => issue.number);
+  }).then(() => processed.push(issue.number));
 
 const getOldIssues = (cutoffDate, issues=[], page=1) => {
   logger.debug(`Fetching ${issues.length}-${issues.length + fetchIssuesBatch} old issues…`);
@@ -210,29 +215,34 @@ logger.log(`Getting issues that haven't been touched since ${cutoffDate}...`);
 getOldIssues(cutoffDate).then(issues => {
   logger.log(`(at least) ${issues.length} un-dealt-with issues in ${owner}/${repo}`);
 
-  const promises = _.shuffle(issues)
-    .map(issue => processIssue(issue, assignee.next().value, ancientLabelsToAdd, ancientMessage));
+  const chain = _.shuffle(issues)
+    .reduce(
+      (chain, issue) => chain.then(() => processIssue(issue, assignee.next().value, ancientLabelsToAdd, ancientMessage)),
+      Promise.resolve());
 
-  return Promise.all(promises);
-}).then(oldIssuesProcessed => {
+  return chain;
+}).then(() => {
   logger.log('\nList of old issues picked:');
-  oldIssuesProcessed.forEach(issue => {
+  processed.forEach(issue => {
     logger.log(`  https://github.com/${owner}/${repo}/issues/${issue}`);
   });
+  processed = [];
 
   logger.log('\nGetting open issues to check for incorrect labeling...');
   return getUnlabledIssues();
 }).then(issues => {
   logger.log(`${issues.length} incorrectly labeled issues`);
 
-  const promises = issues
+  const chain = issues
     .filter(issue => issue.labels.find(({name: issueLabel}) => expectedLabels.find(expectedLabel => !issueLabel.match(expectedLabel))))
-    .map(issue => processIssue(issue, assignee.next().value, unlabeledLabelsToAdd, unlabeledMessage));
+    .reduce(
+      (chain, issue) => chain.then(() => processIssue(issue, assignee.next().value, unlabeledLabelsToAdd, unlabeledMessage)),
+      Promise.resolve());
 
-  return Promise.all(promises);
-}).then(unlabeledIssuesProcessed => {
+  return chain;
+}).then(() => {
   logger.log('\nList of unlabeled issues:');
-  unlabeledIssuesProcessed.forEach(issue => {
+  processed.forEach(issue => {
     logger.log(`  https://github.com/${owner}/${repo}/issues/${issue}`);
   });
 

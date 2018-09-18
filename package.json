@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {},
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "dependencies": {
     "github": "^9.2.0",
     "lodash": "^4.17.2",
